@@ -10,12 +10,16 @@ WGET_FILE_NAME="wget-1.11.4-3.el5_8.2.x86_64.rpm"
 PRODUCT_CACHE_DIR="./chef/tropo"
 COOKBOOK_CACHE_DIR="./cookbook_cache"
 PRODUCT_NAME=$(ls ${DARK_DIR_ADDRESS} | grep build.sh | cut -d "_" -f 1)
-GATEWAY_PACKAGE_NAME="Gateway_s.tgz"
-RUNTIME_PACKAGE_NAME="Runtime_s.tgz"
+GATEWAY_PACKAGE_NAME="gateway_dark_${PRODUCT_VERSION}.tgz"
+RUNTIME_PACKAGE_NAME="runtime_dark_${PRODUCT_VERSION}.tgz"
 PRODUCT_UPLOAD_SERVER="ftp2.pek.voxeo.com"
 PRODUCT_UPLOAD_LOCATION="/home/tropo/DarkInstall"
+YUM_METADATA_LOCATION="/home/tropo/DarkInstall/12.3.0/"
+YUM_METADATA_NAME="Yum_server.tgz"
 #PRODUCT_UPLOAD_SERVER="10.10.0.6"
 #PRODUCT_UPLOAD_LOCATION="/var/ftp/pub/tropo/"
+#YUM_METADATA_LOCATION="/test"
+#YUM_METADATA_NAME="Yum_server.tgz"
 DEBUG_MODE=true
 
 usage(){
@@ -222,7 +226,7 @@ product_upload(){
             ssh root@${PRODUCT_UPLOAD_SERVER} "rm -rf ${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}/${RUNTIME_PACKAGE_NAME}"
             scp ${PRODUCT_PATH}/${RUNTIME_PACKAGE_NAME} root@"${PRODUCT_UPLOAD_SERVER}:${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}"
             debug scp ${PRODUCT_PATH}/${RUNTIME_PACKAGE_NAME} root@"${PRODUCT_UPLOAD_SERVER}:${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}"
-            echo -e "\e[32mRuntime package was uploaded successfully\[0m"
+            echo -e "\e[32mRuntime package was uploaded successfully\e[0m"
             break
           elif [[ ${reply} == "no" || ${reply} == "n" ]]
           then
@@ -238,6 +242,17 @@ product_upload(){
       exit 5
     fi
 fi
+}
+
+yum_metadata_transfer(){
+  ssh root@${PRODUCT_UPLOAD_SERVER} "ls ${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}/${YUM_METADATA_NAME} >/dev/null 2>&1"
+      if [[ ${?} -ne 0 ]]
+      then
+        ssh root@${PRODUCT_UPLOAD_SERVER} "ln ${YUM_METADATA_LOCATION}/${YUM_METADATA_NAME} ${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}"  
+        debug ssh root@${PRODUCT_UPLOAD_SERVER} "ln ${YUM_METADATA_LOCATION}/${YUM_METADATA_NAME} ${PRODUCT_UPLOAD_LOCATION}/${PRODUCT_VERSION}"        echo -e "\e[32mYum package was uploaded successfully\e[0m"
+      else
+        echo -e "\e[32mYum package is already exist\e[0m"
+      fi
 }
 
 if [[ -z ${PRODUCT_VERSION} || -z ${DARK_DIR_ADDRESS} ]]
@@ -260,4 +275,5 @@ cookbook_update
 file_transfer
 product_package
 product_upload
+yum_metadata_transfer
 

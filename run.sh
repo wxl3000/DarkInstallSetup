@@ -3,18 +3,9 @@
 #DarkInstall setup
 #Name:run.sh
 
-DARK_SETUP_FILE_ADDRESS="./dark_install_setup.sh"
-
-usage(){
-  echo -e "\e[33mrun.sh [-d <DEBUG_MODE>] [-v <PRODUCT_VERSION>] [GATEWAY_DARK_DIRECTORY] [RUNTIME_DARK_DIRECTORY]\e[0m"
-  exit 1
-}
-
-initial_clean(){
-  rm -rf *manifest*
-  rm -rf *cookbook_cache*
-  rm -rf *chef*
-}
+DARK_SETUP_FILE="./dark_install_setup.sh"
+ARTIFACTS_SERVER="ftp2.pek.voxeo.com"
+ARTIFACTS_LOCATION="${ARTIFACTS_SERVER}:/workstation"
 
 while getopts dv: opt;
 do 
@@ -28,20 +19,35 @@ do
   esac
 done
 
+usage(){
+  echo -e "\e[33mrun.sh [-d <DEBUG_MODE>] [-v <PRODUCT_VERSION>]\e[0m"
+  exit 1
+}
+
 debug(){ 
   ${DEBUG_MODE} && echo -e "\e[36mDEBUG:[${*}]\e[0m"
 }
 
-shift $((OPTIND-1))
+initial_clean(){
+  rm -rf *manifest*
+  rm -rf *cookbook_cache*
+  rm -rf *chef*
+  rm -rf *ratical*
+  rm -rf *server*
+}
 
+artifacts_download(){
+  scp root@${ARTIFACTS_LOCATION}/${1} ./
+}
+
+shift $((OPTIND-1))
 GATEWAY_DARK_DIRECTORY=$1
 RUNTIME_DARK_DIRECTORY=$2
 
 initial_clean
 
-if [[ -z ${PRODUCT_VERSION} || -z ${GATEWAY_DARK_DIRECTORY} || -z ${RUNTIME_DARK_DIRECTORY} ]]
+if [[ -z ${PRODUCT_VERSION} ]]
 then
-  debug ${PRODUCT_VERSION} ${GATEWAY_DARK_DIRECTORY} ${RUNTIME_DARK_DIRECTORY}
   usage
 else
   echo ${PRODUCT_VERSION} | grep -o -E "[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}" >/dev/null 2>&1
@@ -55,14 +61,20 @@ fi
 
 if [[ ${DEBUG_MODE} == true ]]
 then
-  if ! sed -i 's/DEBUG_MODE=false/DEBUG_MODE=true/' ${DARK_SETUP_FILE_ADDRESS}
+  if ! sed -i 's/DEBUG_MODE=false/DEBUG_MODE=true/' ${DARK_SETUP_FILE}
   then
     echo "\e[31mPlease make sure you have file 'run.sh' in the same directory with file 'dark_install_setup.sh' \e[0m"
   fi
 fi
 
-sh ${DARK_SETUP_FILE_ADDRESS} ${PRODUCT_VERSION} ${GATEWAY_DARK_DIRECTORY}
-debug sh ${DARK_SETUP_FILE_ADDRESS} ${PRODUCT_VERSION} ${GATEWAY_DARK_DIRECTORY}
-sh ${DARK_SETUP_FILE_ADDRESS} ${PRODUCT_VERSION} ${RUNTIME_DARK_DIRECTORY}
-debug sh ${DARK_SETUP_FILE_ADDRESS} ${PRODUCT_VERSION} ${RUNTIME_DARK_DIRECTORY}
+artifacts_download gateway_ratical.tgz && tar zxvf gateway_ratical.tgz
+artifacts_download runtime_ratical.tgz && tar zxvf runtime_ratical.tgz
+
+sh ${DARK_SETUP_FILE} ${PRODUCT_VERSION} ./gateway_server
+debug sh ${DARK_SETUP_FILE} ${PRODUCT_VERSION} ./gateway_server
+sh ${DARK_SETUP_FILE} ${PRODUCT_VERSION} ./runtime_server
+debug sh ${DARK_SETUP_FILE} ${PRODUCT_VERSION} ./runtime_server
+
+rm -rf gateway_ratical.tgz runtime_ratical.tgz gateway_server runtime_server gateway_dark*.tgz runtime_dark*.tgz
+
 
