@@ -20,7 +20,7 @@ do
 done
 
 usage(){
-  echo -e "\e[33mrun.sh [-d <DEBUG_MODE>] [-v <PRODUCT_VERSION>]\e[0m"
+  echo -e "\e[33mrun.sh [-d DEBUG_MODE] [-v <PRODUCT_VERSION>]\e[0m"
   exit 1
 }
 
